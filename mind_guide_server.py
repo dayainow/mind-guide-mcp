@@ -264,4 +264,8 @@ def recommend_welfare(situation: str, age: int | None = None,
 
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http", host=_HOST, port=_PORT)
+    import uvicorn
+    from mcp.server.fastmcp import FastMCP as _FastMCP  # noqa: F401
+
+    app = mcp.streamable_http_app()
+    uvicorn.run(app, host=_HOST, port=_PORT)
