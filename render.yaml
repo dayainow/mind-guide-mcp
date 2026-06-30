@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: mind-guide-mcp
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python mind_guide_server.py
+    plan: free
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 10000
