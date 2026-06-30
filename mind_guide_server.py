@@ -184,17 +184,35 @@ def _fetch_centers_from_api(region: str, topn: int) -> list[dict] | None:
         return None
 
 
+def _normalize_region(region: str) -> list[str]:
+    """'서울 용산구' → ['서울', '용산'] 처럼 검색에 쓸 키워드 리스트 반환."""
+    tokens = region.replace(",", " ").split()
+    keywords = []
+    for t in tokens:
+        # 시도명 정규화: '서울특별시'·'서울시'·'서울' 모두 '서울'로
+        t = t.rstrip("특별시광역자치도")
+        if t:
+            keywords.append(t)
+    return keywords
+
+
 def _get_centers(region: str, situation: str, topn: int) -> list[dict]:
     """JSON 파일 데이터 우선, 없으면 API, 그것도 없으면 더미."""
     pool = _CENTERS or _fetch_centers_from_api(region, topn * 3) or _DUMMY_CENTERS
 
     if region:
-        # 주소에 지역명이 포함된 것 우선
-        matched = [c for c in pool if region in c.get("addr", "") or region in c.get("region", "")]
-        pool = matched or pool
+        keywords = _normalize_region(region)
+        # 키워드 중 하나라도 주소에 포함된 것만 필터
+        matched = [
+            c for c in pool
+            if any(k in c.get("addr", "") for k in keywords)
+        ]
+        if not matched:
+            # 매칭 실패 → 엉뚱한 지역 안내하지 않고 빈 목록
+            return []
+        pool = matched
 
     if situation:
-        # 업무 내용에 상황 키워드가 있으면 상위 정렬
         pool = sorted(pool, key=lambda c: -sum(k in c.get("업무", "") for k in situation.split()))
 
     return pool[:max(1, topn)]
@@ -229,6 +247,11 @@ def find_counseling_centers(region: str, situation: str = "", topn: int = 3) -> 
         out.append("\n아래는 이어서 연결해드릴 수 있는 기관이에요.\n")
 
     centers = _get_centers(region, situation, topn)
+
+    if not centers:
+        out.append(f"'{region}' 지역 데이터가 현재 없어요.")
+        out.append("자살예방상담전화 109(24시간)로 연락하시면 가까운 기관을 직접 안내받을 수 있어요.")
+        return "\n".join(out)
 
     label = f"'{region}'" if region else "전국"
     out.append(f"{label} 기준 상담 가능한 곳을 정리했어요:")
