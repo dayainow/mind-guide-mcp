@@ -55,11 +55,18 @@ def _detect_crisis(text: str) -> bool:
 
 def _crisis_block() -> str:
     lines = [
-        "⚠️ 지금 많이 힘드신 것 같아요. 혼자 견디지 않으셔도 됩니다.",
-        "아래로 연락하면 바로 도움을 받을 수 있어요.", "",
+        "지금 이 말을 꺼내기까지 많이 힘드셨을 것 같아요.",
+        "혼자 버티지 않아도 됩니다. 지금 바로 연락할 수 있는 곳이 있어요.", "",
+        "전화 한 통으로 훈련된 상담사와 바로 연결됩니다:",
+        "",
     ]
     for name, num, hours in CRISIS_CONTACTS:
         lines.append(f"· {name}  {num}  ({hours})")
+    lines += [
+        "",
+        "전화가 어렵다면 문자나 채팅 상담도 가능해요.",
+        "지금 많이 지쳐 있어도, 도움을 받으면 달라질 수 있어요.",
+    ]
     return "\n".join(lines)
 
 
@@ -232,15 +239,19 @@ def _get_welfare(situation: str, household: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 @mcp.tool()
 def crisis_resources(region: str = "") -> str:
-    """위기 시 즉시 연락할 수 있는 상담 전화·기관을 안내합니다.
-    힘들다는 신호가 조금이라도 보이면 다른 도구보다 먼저 이 도구를 부르세요."""
+    """사용자가 '죽고 싶다', '자해', '살기 싫다', '사라지고 싶다' 등
+    즉각적인 위기 신호를 명확히 표현할 때만 호출하세요.
+    단순히 '힘들다', '지쳤다', '도움받고 싶다'는 표현은 위기 신호가 아닙니다.
+    그런 경우엔 find_counseling_centers 또는 recommend_welfare를 먼저 사용하세요."""
     return _crisis_block()
 
 
 @mcp.tool()
 def find_counseling_centers(region: str, situation: str = "", topn: int = 3) -> str:
-    """지역(region)과 상황(situation: 예 '직장 스트레스', '청년', '산후')을 받아
-    가까운 정신건강·심리상담 기관을 추천하고 연락처·운영시간을 안내합니다."""
+    """사용자가 힘들다, 지쳤다, 상담받고 싶다, 스트레스 받는다고 할 때 호출하세요.
+    지역(region)과 상황(situation: 예 '직장 스트레스', '청년', '산후우울', '중독')을 받아
+    가까운 정신건강복지센터 연락처·운영시간·담당 업무를 안내합니다.
+    지역을 모를 경우 region을 빈 문자열로 호출하세요."""
     out = []
     if _detect_crisis(situation):
         out.append(_crisis_block())
