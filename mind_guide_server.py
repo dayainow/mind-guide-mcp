@@ -28,7 +28,7 @@ load_dotenv()
 mcp = FastMCP("마음길잡이")
 
 _API_KEY = os.getenv("DATA_GO_KR_API_KEY", "")
-_HOST = os.getenv("HOST", "127.0.0.1")
+_HOST = os.getenv("HOST", "0.0.0.0")
 _PORT = int(os.getenv("PORT", "8000"))
 
 # ---------------------------------------------------------------------------
