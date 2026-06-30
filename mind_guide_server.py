@@ -25,11 +25,11 @@ from mcp.server.fastmcp import FastMCP
 
 load_dotenv()
 
-mcp = FastMCP("마음길잡이")
-
 _API_KEY = os.getenv("DATA_GO_KR_API_KEY", "")
 _HOST = os.getenv("HOST", "0.0.0.0")
 _PORT = int(os.getenv("PORT", "8000"))
+
+mcp = FastMCP("마음길잡이", stateless_http=True, host=_HOST, port=_PORT)
 
 # ---------------------------------------------------------------------------
 # 위기 연락처 (출처: 보건복지부, 2024-01-01~ 통합 운영)
@@ -264,8 +264,4 @@ def recommend_welfare(situation: str, age: int | None = None,
 
 
 if __name__ == "__main__":
-    import uvicorn
-    from mcp.server.fastmcp import FastMCP as _FastMCP  # noqa: F401
-
-    app = mcp.streamable_http_app()
-    uvicorn.run(app, host=_HOST, port=_PORT)
+    mcp.run(transport="streamable-http")
