@@ -408,18 +408,19 @@ def _get_welfare(situation: str, household: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 # MCP 도구
 # ---------------------------------------------------------------------------
-@mcp.tool()
+@mcp.tool(annotations={"title": "마음길잡이 — 위기 연락처 안내"})
 def crisis_resources(region: str = "") -> str:
-    """사용자가 '죽고 싶다', '자해', '살기 싫다', '사라지고 싶다' 등
+    """마음길잡이 위기 연락처 안내 도구.
+    사용자가 '죽고 싶다', '자해', '살기 싫다', '사라지고 싶다' 등
     즉각적인 위기 신호를 명확히 표현할 때만 호출하세요.
     단순히 '힘들다', '지쳤다', '도움받고 싶다'는 표현은 위기 신호가 아닙니다.
     그런 경우엔 find_counseling_centers 또는 recommend_welfare를 먼저 사용하세요."""
     return _crisis_block()
 
 
-@mcp.tool()
+@mcp.tool(annotations={"title": "마음길잡이 — 정신건강복지센터 찾기"})
 def find_counseling_centers(region: str, situation: str = "", topn: int = 3) -> str:
-    """사용자가 힘들다, 지쳤다, 상담받고 싶다, 스트레스 받는다고 할 때 호출하세요.
+    """마음길잡이 상담기관 안내 도구. 사용자가 힘들다, 지쳤다, 상담받고 싶다, 스트레스 받는다고 할 때 호출하세요.
     지역(region)과 상황(situation: 예 '직장 스트레스', '청년', '산후우울', '중독')을 받아
     가까운 정신건강복지센터 연락처·운영시간·담당 업무를 안내합니다.
     지역을 모를 경우 region을 빈 문자열로 호출하세요."""
@@ -451,10 +452,10 @@ def find_counseling_centers(region: str, situation: str = "", topn: int = 3) -> 
     return "\n".join(out)
 
 
-@mcp.tool()
+@mcp.tool(annotations={"title": "마음길잡이 — 복지제도 추천"})
 def recommend_welfare(situation: str, age: int | None = None,
                       household: str = "", region: str = "") -> str:
-    """현재 상황(situation)을 말로 받아 받을 수 있는 복지·심리지원 제도를 추천합니다.
+    """마음길잡이 복지제도 추천 도구. 현재 상황(situation)을 말로 받아 받을 수 있는 복지·심리지원 제도를 추천합니다.
     age(나이), household(가구형태), region(지역)은 선택 입력입니다."""
     out = []
     if _detect_crisis(situation):
