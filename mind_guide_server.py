@@ -379,8 +379,8 @@ def _get_centers(region: str, situation: str, topn: int) -> list[dict]:
     """JSON 파일 데이터 우선, 없으면 API, 그것도 없으면 더미."""
     pool = _CENTERS or _fetch_centers_from_api(region, topn * 3) or _DUMMY_CENTERS
 
-    if region:
-        keywords = _normalize_region(region)
+    keywords = _normalize_region(region) if region else []
+    if keywords:
         # 키워드 중 하나라도 주소에 포함된 것만 필터
         matched = [
             c for c in pool
@@ -391,8 +391,12 @@ def _get_centers(region: str, situation: str, topn: int) -> list[dict]:
             return []
         pool = matched
 
-    if situation:
-        pool = sorted(pool, key=lambda c: -sum(k in c.get("업무", "") for k in situation.split()))
+    # 지역 키워드가 많이 겹칠수록(구 단위 일치 등) 앞으로, 그 다음 상황 일치순
+    sit_keywords = situation.split() if situation else []
+    pool = sorted(pool, key=lambda c: (
+        -sum(k in c.get("addr", "") for k in keywords),
+        -sum(k in c.get("업무", "") for k in sit_keywords),
+    ))
 
     return pool[:max(1, topn)]
 
@@ -459,6 +463,11 @@ def find_counseling_centers(region: str, situation: str = "", topn: int = 3) -> 
 
     label = f"'{region}'" if region else "전국"
     out.append(f"{label} 기준 상담 가능한 곳을 정리했어요:")
+    keywords = _normalize_region(region) if region else []
+    if keywords and not any(
+        all(k in c.get("addr", "") for k in keywords) for c in centers
+    ):
+        out.append("(말씀하신 지역과 정확히 일치하는 기관 데이터가 없어, 같은 지역권의 가까운 기관을 안내해요.)")
     for c in centers:
         업무 = f"\n  {c['업무']}" if c.get("업무") else ""
         out.append(
@@ -469,10 +478,11 @@ def find_counseling_centers(region: str, situation: str = "", topn: int = 3) -> 
         )
     out.append("\n처음이라 뭐라고 말할지 막막하면, 상담을 받고 싶어 연락했다고만 해도 충분해요.")
     out.append(
-        "\n[AI 참고: 목록을 그대로 나열하기 전에, 지금까지 들은 사용자의 마음을 한 문장으로"
-        " 알아주는 말을 먼저 건네세요. 소개 후에는 '혼자 다 감당하지 않아도 된다'는 안심과"
-        " 함께, 연락해볼 마음이 드는지 부드럽게 물어보세요. 이용 방법을 궁금해하면"
-        " usage_guide 도구로 안내하세요.]"
+        "\n[AI 참고: 이 도구 결과는 사용자 화면에 보이지 않습니다. 위 기관 목록"
+        "(이름·전화번호·운영시간)을 반드시 응답 본문에 포함해서 보여주세요."
+        " 목록 앞에는 사용자의 마음을 알아주는 말 한 문장을, 목록 뒤에는"
+        " '혼자 다 감당하지 않아도 된다'는 안심과 함께 연락해볼 마음이 드는지"
+        " 부드럽게 물어보세요. 이용 방법을 궁금해하면 usage_guide 도구로 안내하세요.]"
     )
     return "\n".join(out)
 
@@ -509,10 +519,11 @@ def recommend_welfare(situation: str, age: int | None = None,
     out.append("  복지로(bokjiro.go.kr)에서 '복지서비스 모의계산'으로 내가 받을 수 있는지 먼저 확인해보세요.")
     out.append("  인터넷이 어려우시면 주민센터에 방문하거나 복지로 콜센터(129)에 전화해도 됩니다.")
     out.append(
-        "\n[AI 참고: 제도를 나열하기 전에 사용자의 마음을 알아주는 말을 한 문장 먼저 건네세요."
-        " 소개 후에는 '받을 수 있는 도움은 당연히 받아도 된다'는 안심과 함께, 신청해볼"
-        " 마음이 드는지 부드럽게 물어보세요. 신청 방법을 궁금해하면 usage_guide 도구로"
-        " 안내하세요.]"
+        "\n[AI 참고: 이 도구 결과는 사용자 화면에 보이지 않습니다. 위 제도 목록"
+        "(이름·내용·신청 방법)을 반드시 응답 본문에 포함해서 보여주세요."
+        " 목록 앞에는 사용자의 마음을 알아주는 말 한 문장을, 목록 뒤에는"
+        " '받을 수 있는 도움은 당연히 받아도 된다'는 안심과 함께 신청해볼 마음이"
+        " 드는지 부드럽게 물어보세요. 신청 방법을 궁금해하면 usage_guide 도구로 안내하세요.]"
     )
     return "\n".join(out)
 
@@ -568,7 +579,8 @@ def usage_guide(kind: str = "counseling") -> str:
     guide = _GUIDE_WELFARE if kind == "welfare" else _GUIDE_COUNSELING
     return (
         guide
-        + "\n\n[AI 참고: 위 단계를 사용자 상황에 맞게 풀어서 안내하고, 마지막에"
+        + "\n\n[AI 참고: 이 도구 결과는 사용자 화면에 보이지 않습니다. 위 단계들을"
+        " 응답 본문에 포함해 사용자 상황에 맞게 풀어서 안내하고, 마지막에"
         " 연락해보고 어땠는지 나중에 알려달라고 따뜻하게 한마디 건네세요.]"
     )
 
