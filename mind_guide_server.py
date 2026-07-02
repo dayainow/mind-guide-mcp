@@ -22,6 +22,7 @@ from urllib.parse import quote_plus, urlencode
 import httpx
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 load_dotenv()
 
@@ -416,20 +417,37 @@ def _get_welfare(situation: str, household: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 # MCP 도구
 # ---------------------------------------------------------------------------
-@mcp.tool(annotations={"title": "마음길잡이 — 위기 연락처 안내", "readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False})
+@mcp.tool(annotations=ToolAnnotations(
+    title="mindGuide(마음길잡이) — Crisis Hotlines",
+    readOnlyHint=True,
+    destructiveHint=False,
+    idempotentHint=True,
+    openWorldHint=False,
+))
 def crisis_resources(region: str = "") -> str:
-    """마음길잡이 위기 연락처 안내 도구.
-    사용자가 '죽고 싶다', '자해', '살기 싫다', '사라지고 싶다' 등
-    즉각적인 위기 신호를 명확히 표현할 때만 호출하세요.
-    단순히 '힘들다', '지쳤다', '도움받고 싶다'는 표현은 위기 신호가 아닙니다.
-    그런 경우엔 find_counseling_centers 또는 recommend_welfare를 먼저 사용하세요."""
+    """mindGuide(마음길잡이) crisis contact tool.
+    Provides immediate crisis hotlines (109, 1577-0199, 129, 1388, 119).
+    Call ONLY when the user explicitly expresses immediate crisis signals such as wanting to die or self-harm.
+    Do NOT call for general distress like feeling tired or struggling —
+    use find_counseling_centers or recommend_welfare instead."""
     return _crisis_block()
 
 
-@mcp.tool(annotations={"title": "마음길잡이 — 정신건강복지센터 찾기", "readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
+@mcp.tool(annotations=ToolAnnotations(
+    title="mindGuide(마음길잡이) — Find Counseling Centers",
+    readOnlyHint=True,
+    destructiveHint=False,
+    idempotentHint=True,
+    openWorldHint=True,
+))
 def find_counseling_centers(region: str, situation: str = "", topn: int = 3) -> str:
-    """마음길잡이 상담기관 안내 도구. 대화에서 파악한 지역·상황에 맞는 정신건강복지센터의
-    연락처·운영시간·담당 업무를 안내합니다.
+    """mindGuide(마음길잡이) mental health center finder.
+    Recommends nearby mental health welfare centers with contact info, hours, and services.
+    Data: 163 centers from Korea public data (전국정신건강복지센터표준데이터).
+    Call AFTER empathizing with the user — do NOT call on the very first distress message.
+    On the first turn, only listen and ask one gentle question.
+    From the second turn, softly suggest finding help, then call once the user agrees.
+    For explicit crisis signals, call crisis_resources immediately instead.
 
     대화 태도(모든 턴에서 지키세요): 당신은 따뜻하고 진심 어린 상담사처럼 말합니다.
     사용자가 한 말을 그대로 받아 마음을 알아주세요.
@@ -487,10 +505,20 @@ def find_counseling_centers(region: str, situation: str = "", topn: int = 3) -> 
     return "\n".join(out)
 
 
-@mcp.tool(annotations={"title": "마음길잡이 — 복지제도 추천", "readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
+@mcp.tool(annotations=ToolAnnotations(
+    title="mindGuide(마음길잡이) — Welfare Program Recommender",
+    readOnlyHint=True,
+    destructiveHint=False,
+    idempotentHint=True,
+    openWorldHint=True,
+))
 def recommend_welfare(situation: str, age: int | None = None,
                       household: str = "", region: str = "") -> str:
-    """마음길잡이 복지제도 추천 도구. 대화에서 파악한 상황에 맞는 복지·심리지원 제도를 추천합니다.
+    """mindGuide(마음길잡이) welfare program recommender.
+    Recommends government welfare and mental health support programs based on situation, age, household, and region.
+    Data: 367 programs from Korea Social Security Information Service (한국사회보장정보원 복지로).
+    Call AFTER empathizing with the user — not on the initial distress message.
+    From the second turn, softly explore the user's situation before calling.
 
     대화 태도: 따뜻하고 진심 어린 상담사처럼 말하세요. 사용자의 말을 그대로 받아
     마음을 알아주고, 위로와 격려를 먼저 건넨 뒤 질문은 한 번에 하나만.
@@ -569,13 +597,19 @@ _GUIDE_WELFARE = """복지제도 신청, 이렇게 진행돼요:
 📌 신청했다가 안 되더라도 불이익은 전혀 없어요."""
 
 
-@mcp.tool(annotations={"title": "마음길잡이 — 첫 이용 가이드", "readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False})
+@mcp.tool(annotations=ToolAnnotations(
+    title="mindGuide(마음길잡이) — Usage Guide",
+    readOnlyHint=True,
+    destructiveHint=False,
+    idempotentHint=True,
+    openWorldHint=False,
+))
 def usage_guide(kind: str = "counseling") -> str:
-    """마음길잡이 첫 이용 가이드 도구. 상담기관이나 복지제도를 추천한 뒤,
-    사용자가 "실제로 해보고 싶다", "어떻게 하는 거예요?", "신청 방법이 궁금해요"처럼
-    다음 단계를 물을 때 호출하세요. 추천 전에 미리 호출하지 마세요.
-
-    kind: 'counseling'(상담기관 첫 전화·방문 절차) 또는 'welfare'(복지제도 신청 절차)."""
+    """mindGuide(마음길잡이) step-by-step usage guide.
+    Explains how to make the first call to a mental health center or how to apply for a welfare program.
+    Call ONLY after recommending a center or program, when the user asks how to proceed
+    (e.g., 'how do I apply?', 'what do I say when I call?'). Do NOT call proactively.
+    kind: 'counseling' (first call/visit to a center) or 'welfare' (welfare program application steps)."""
     guide = _GUIDE_WELFARE if kind == "welfare" else _GUIDE_COUNSELING
     return (
         guide
