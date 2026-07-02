@@ -416,7 +416,7 @@ def _get_welfare(situation: str, household: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 # MCP 도구
 # ---------------------------------------------------------------------------
-@mcp.tool(annotations={"title": "마음길잡이 — 위기 연락처 안내"})
+@mcp.tool(annotations={"title": "마음길잡이 — 위기 연락처 안내", "readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False})
 def crisis_resources(region: str = "") -> str:
     """마음길잡이 위기 연락처 안내 도구.
     사용자가 '죽고 싶다', '자해', '살기 싫다', '사라지고 싶다' 등
@@ -426,7 +426,7 @@ def crisis_resources(region: str = "") -> str:
     return _crisis_block()
 
 
-@mcp.tool(annotations={"title": "마음길잡이 — 정신건강복지센터 찾기"})
+@mcp.tool(annotations={"title": "마음길잡이 — 정신건강복지센터 찾기", "readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 def find_counseling_centers(region: str, situation: str = "", topn: int = 3) -> str:
     """마음길잡이 상담기관 안내 도구. 대화에서 파악한 지역·상황에 맞는 정신건강복지센터의
     연락처·운영시간·담당 업무를 안내합니다.
@@ -487,7 +487,7 @@ def find_counseling_centers(region: str, situation: str = "", topn: int = 3) -> 
     return "\n".join(out)
 
 
-@mcp.tool(annotations={"title": "마음길잡이 — 복지제도 추천"})
+@mcp.tool(annotations={"title": "마음길잡이 — 복지제도 추천", "readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": True})
 def recommend_welfare(situation: str, age: int | None = None,
                       household: str = "", region: str = "") -> str:
     """마음길잡이 복지제도 추천 도구. 대화에서 파악한 상황에 맞는 복지·심리지원 제도를 추천합니다.
@@ -569,7 +569,7 @@ _GUIDE_WELFARE = """복지제도 신청, 이렇게 진행돼요:
 📌 신청했다가 안 되더라도 불이익은 전혀 없어요."""
 
 
-@mcp.tool(annotations={"title": "마음길잡이 — 첫 이용 가이드"})
+@mcp.tool(annotations={"title": "마음길잡이 — 첫 이용 가이드", "readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False})
 def usage_guide(kind: str = "counseling") -> str:
     """마음길잡이 첫 이용 가이드 도구. 상담기관이나 복지제도를 추천한 뒤,
     사용자가 "실제로 해보고 싶다", "어떻게 하는 거예요?", "신청 방법이 궁금해요"처럼
