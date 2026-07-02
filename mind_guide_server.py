@@ -265,6 +265,52 @@ _CENTER_API_URL = (
     "https://api.data.go.kr/openapi/tn_pubr_public_imbclty_cnter_api"
 )
 
+# 한국사회보장정보원_복지서비스정보 (odcloud)
+_WELFARE_API_URL = (
+    "https://api.odcloud.kr/api/15083323/v1"
+    "/uddi:3929b807-3420-44d7-a851-cc741fce65a1"
+)
+
+
+def _fetch_welfare_from_api(situation: str, topn: int) -> list[dict] | None:
+    """복지로 API로 복지서비스를 조회한다. 실패 시 None 반환."""
+    if not _API_KEY:
+        return None
+    try:
+        params = urlencode({
+            "page": "1",
+            "perPage": "100",
+            "serviceKey": _API_KEY,
+        })
+        resp = httpx.get(f"{_WELFARE_API_URL}?{params}", timeout=8.0)
+        resp.raise_for_status()
+        items = resp.json().get("data", [])
+
+        if situation:
+            keywords = situation.replace(",", " ").split()
+            scored = []
+            for item in items:
+                text = item.get("서비스명", "") + item.get("서비스요약", "")
+                score = sum(k in text for k in keywords)
+                if score > 0:
+                    scored.append((score, item))
+            scored.sort(key=lambda x: -x[0])
+            items = [item for _, item in scored]
+
+        result = []
+        for item in items[:max(1, topn)]:
+            contact = item.get("대표문의", "복지로 129")
+            link = item.get("서비스URL", "https://www.bokjiro.go.kr")
+            result.append({
+                "name": item.get("서비스명", ""),
+                "desc": item.get("서비스요약", ""),
+                "how": f"{contact} / 복지로(bokjiro.go.kr)에서 신청",
+                "keywords": [],
+            })
+        return result if result else None
+    except Exception:
+        return None
+
 
 def _fetch_centers_from_api(region: str, topn: int) -> list[dict] | None:
     """공공데이터 API로 정신건강복지센터를 조회한다. 실패 시 None 반환."""
@@ -348,8 +394,11 @@ def _get_centers(region: str, situation: str, topn: int) -> list[dict]:
 
 
 def _get_welfare(situation: str, household: str) -> list[dict]:
-    """복지 제도 추천 — 현재는 더미 키워드 매칭 (추후 복지로 API 연동 예정)."""
+    """복지 제도 추천 — 실데이터 API 우선, 실패 시 더미 데이터."""
     text = f"{situation} {household}"
+    api_results = _fetch_welfare_from_api(text, 3)
+    if api_results:
+        return api_results
     scored = [(sum(k in text for k in w["keywords"]), w) for w in _DUMMY_WELFARE]
     scored = [(s, w) for s, w in scored if s > 0]
     scored.sort(key=lambda x: -x[0])
