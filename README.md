@@ -9,6 +9,12 @@
   "요즘 힘든데 근처 상담할 곳 있을까?" 한 마디로 상담기관과 복지제도를 연결합니다.
 </p>
 
+<p align="center">
+  <a href="https://playmcp.kakao.com"><img src="https://img.shields.io/badge/카카오_PlayMCP-등록완료-FFCD00?style=flat-square&logo=kakao&logoColor=000" alt="PlayMCP"/></a>
+  <a href="https://mind-guide-mcp.onrender.com/mcp"><img src="https://img.shields.io/badge/Render-배포중-46E3B7?style=flat-square&logo=render&logoColor=000" alt="Render"/></a>
+  <img src="https://img.shields.io/badge/Python-FastMCP-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
+</p>
+
 ---
 
 ## 무엇을 하는 서버인가
@@ -16,8 +22,8 @@
 마음길잡이는 **상담하는 봇이 아닌, 연결해주는 봇**입니다.
 
 사용자가 카카오톡에서 지역과 상황을 말로 전달하면:
-- 전국 정신건강복지센터 연락처·운영시간 안내 (공공데이터 기반, 163개 기관)
-- 청년 바우처·산후 정서지원 등 맞춤 복지제도 12종 추천
+- 전국 정신건강복지센터 연락처·운영시간 안내 (공공데이터 기반, **163개 기관**)
+- 산재·청년·장애·노인·아이돌봄 등 맞춤 복지제도 추천 (실데이터 **367종**)
 - 위기 신호 감지 시 자살예방상담전화(109) 등 즉시 연락처 우선 안내
 
 대화 내역을 읽거나 개인정보를 수집하지 않습니다. 사용자가 직접 입력한 내용만으로 동작합니다.
@@ -26,11 +32,11 @@
 
 ## 도구 (MCP Tools)
 
-| 도구 | 설명 |
-|------|------|
-| `crisis_resources` | 위기 시 즉시 연락처 안내 (109, 1577-0199, 129, 1388, 119) |
-| `find_counseling_centers` | 지역·상황별 정신건강복지센터 추천 |
-| `recommend_welfare` | 상황·나이·가구형태별 복지제도 추천 |
+| 도구 | 설명 | 데이터 |
+|------|------|--------|
+| `crisis_resources` | 위기 시 즉시 연락처 안내 | 보건복지부 공식 5개 번호 |
+| `find_counseling_centers` | 지역·상황별 정신건강복지센터 추천 | 공공데이터 163개 기관 |
+| `recommend_welfare` | 상황·나이·가구형태별 복지제도 추천 | 복지로 실데이터 367종 |
 
 > 모든 추천 도구는 위기 신호를 먼저 감지해, 신호가 있으면 추천보다 위기 연락처를 앞에 안내합니다.
 
@@ -65,14 +71,30 @@
 
 ---
 
-## 데이터
+## 데이터 출처
 
-| 구분 | 출처 | 상태 |
-|------|------|------|
-| 상담기관 163개 | 공공데이터포털 `전국건강증진센터표준데이터` (정신보건 필터) | 운영 중 |
-| 복지제도 12종 | 청년 바우처·산후 지원·노인 돌봄·장애인 지원 등 | 운영 중 |
-| 복지제도 실데이터 | 한국사회보장정보원 `중앙부처복지서비스` OpenAPI | 연동 예정 |
-| 위기 연락처 | 보건복지부 공식 번호 (109 통합 운영, 2024-01-01~) | 운영 중 |
+### 상담기관 (163개)
+
+| 항목 | 내용 |
+|------|------|
+| 출처 | 공공데이터포털 `전국건강증진센터표준데이터` |
+| 필터 | 건강증진센터구분 = 정신보건 |
+| 제공 정보 | 기관명 · 주소 · 전화 · 운영시간 · 담당 업무 |
+| 갱신 기준 | 2026-03 다운로드 기준 (`data/centers.json`) |
+
+### 복지제도 (367종)
+
+| 항목 | 내용 |
+|------|------|
+| 출처 | 한국사회보장정보원 `복지서비스정보` (odcloud) |
+| API | `https://api.odcloud.kr/api/15083323/v1/...` |
+| 제공 정보 | 서비스명 · 서비스요약 · 대표문의 · 복지로 링크 |
+| 매칭 방식 | 사용자 입력 키워드 × 서비스명·요약 점수 기반 |
+| 키 설정 | `.env` → `DATA_GO_KR_API_KEY` (없으면 더미 12종으로 동작) |
+
+### 위기 연락처
+
+보건복지부 공식 번호, 2024-01-01부터 109 통합 운영.
 
 ---
 
@@ -80,18 +102,31 @@
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env   # API 키 입력 (없어도 더미 데이터로 동작)
+cp .env.example .env   # DATA_GO_KR_API_KEY 입력 (없어도 동작)
 python mind_guide_server.py
 # → http://0.0.0.0:8000/mcp (streamable-http)
 ```
+
+### 환경변수
+
+| 변수 | 설명 | 필수 |
+|------|------|------|
+| `DATA_GO_KR_API_KEY` | data.go.kr 일반 인증키 | 선택 (없으면 더미 데이터) |
+| `HOST` | 서버 바인딩 주소 | 선택 (기본: `0.0.0.0`) |
+| `PORT` | 포트 | 선택 (기본: `8000`) |
 
 ---
 
 ## 배포
 
-- **플랫폼**: Render (무료 플랜)
-- **엔드포인트**: `https://mind-guide-mcp.onrender.com/mcp`
-- **PlayMCP**: [playmcp.kakao.com](https://playmcp.kakao.com) 등록 완료
+| 항목 | 값 |
+|------|-----|
+| 플랫폼 | Render (무료 플랜) |
+| MCP 엔드포인트 | `https://mind-guide-mcp.onrender.com/mcp` |
+| 전송 방식 | streamable-http (`stateless_http=True`) |
+| PlayMCP | [playmcp.kakao.com](https://playmcp.kakao.com) 등록 완료 |
+
+> Render 무료 플랜은 15분 비활성 후 슬립됩니다. 첫 요청 시 수십 초 걸릴 수 있어요.
 
 ---
 
